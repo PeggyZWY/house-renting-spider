@@ -57,7 +57,6 @@ class Main(object):
             'HOST': 'www.douban.com',
             'Cookie': self.config.douban_cookie
         }
-        self.ok = True
 
     def run(self):
         result_file_name = 'results/result_' + str(spider.file_time)
@@ -108,6 +107,7 @@ class Main(object):
                             try:
                                 table = soup.find_all(attrs={'class': 'olt'})[0]
                                 tr_count_for_this_page = 0
+                                spider.ok = True
 
                                 for tr in table.find_all('tr'):
                                     td = tr.find_all('td')
@@ -121,8 +121,7 @@ class Main(object):
                                     time_text = td[1].get('title')
 
                                     if (page_number != 0) and (Utils.getTimeFromStr(time_text) < start_time):
-                                        self.ok = False
-                                        # return self.ok
+                                        spider.ok = False
                                         break
                                     # ignore data ahead of the specific date
                                     if Utils.getTimeFromStr(time_text) < start_time:
@@ -141,12 +140,11 @@ class Main(object):
                                         print 'add new data:', title_text, time_text, reply_count, link_text, keyword
                                     except sqlite3.Error, e:
                                         print 'data exists:', title_text, link_text, e # 之前添加过了而URL（设置了唯一）一样会报错
-
                             except Exception, e:
                                 print 'error match table:', e
                     except Exception, e:
                         print 'error match paginator:', e
-                        self.ok = False
+                        spider.ok = False
                         return False
                 else:
                     print 'request url error %s -status code: %s:' % (url_link, r.status_code)
@@ -160,20 +158,20 @@ class Main(object):
                 page_number = 0
 
                 print 'start i ->',i
-                self.ok = True
                 for j in range(len(search_list)):
+                    spider.ok = True
+                    page_number = 0
                     keyword = search_list[j]
                     print 'start i->j %s -> %s %s' %(i, j, keyword)
                     print '>>>>>>>>>> Search %s  %s ...' % (douban_url_name[i].encode('utf-8'), keyword)
                     
-                    while self.ok:
+                    while spider.ok:
+                        spider.ok = True
                         print 'i, j, page_number: ', i, j, page_number
                         
                         douban_url = urlList(page_number)
                         crawl(i, douban_url, keyword, self.douban_headers)
                         page_number += 1
-                        if self.ok == False:
-                            break
 
             cursor.close()
 
@@ -248,6 +246,7 @@ class Spider(object):
     def __init__(self):
         this_file_dir = os.path.split(os.path.realpath(__file__))[0]
         config_file_path = os.path.join(this_file_dir, 'config.ini')
+        self.ok = True
         self.config = Config.Config(config_file_path)
         FILETIMEFORMAT = '%Y%m%d_%X'
         self.file_time = time.strftime(FILETIMEFORMAT, time.localtime()).replace(':', '')
