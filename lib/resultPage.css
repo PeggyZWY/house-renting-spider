@@ -1,0 +1,50 @@
+body {
+    font: 12px Helvetica,Arial,sans-serif;
+    color: #333;
+}
+
+h1 {
+    display: inline-block;
+    padding-right: 10px;
+    line-height: 30px;
+}
+
+img {
+    height: 20px;
+}
+th {
+    color: #072;  
+    background-color: #edf4ed;  
+}
+
+a {
+    text-decoration: none;
+}
+
+a:link {
+    color: #37a;
+}
+
+a:visited {
+    color: #669;
+}
+
+.even {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: rgb(255, 246, 238);
+}
+
+@media screen and (max-width: 1000px) {
+    .column4 {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 850px) {
+    .column6 {
+        display: none;
+    }
+}
