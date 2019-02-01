@@ -26,8 +26,8 @@ class Utils(object):
 
     @staticmethod
     def getTimeFromStr(timeStr):
-        # 13:47:32或者2016-05-25或者2016-05-25 13:47:32
-        # 都转成了datetime
+        # 13:47:32 or 2016-05-25 or 2016-05-25 13:47:32
+        # all be transformed to datetime
         if '-' in timeStr and ':' in timeStr:
             return datetime.datetime.strptime(timeStr, "%Y-%m-%d %H:%M:%S")
         elif '-' in timeStr:
@@ -43,8 +43,6 @@ class Utils(object):
 
 
 class Main(object):
-    douban_black_list=(u'搬家')
-
     def __init__(self, config):
         self.config = config
         self.douban_headers = {
@@ -61,7 +59,7 @@ class Main(object):
     def run(self):
         result_file_name = 'results/result_' + str(spider.file_time)
         try:
-            print '打开数据库...'
+            print 'Connecting database...  打开数据库...'
             # creat database
             conn = sqlite3.connect(result_file_name + '.sqlite')
             conn.text_factory = str
@@ -97,10 +95,10 @@ class Main(object):
                 if r.status_code == 200:
                     try:
                         if i == 0:
-                            self.douban_headers['Cookie'] = r.cookies
-                        soup = BeautifulSoup(r.text)
+                            self.douban_headers['Cookie'] = r.cookies.items()[0][1]
+                        soup = BeautifulSoup(r.text, "lxml")
                         paginator = soup.find_all(attrs={'class': 'paginator'})[0]
-                        # print "paginator: ", paginator
+
                         if (page_number != 0) and not paginator:
                             return False
                         else:
@@ -115,8 +113,6 @@ class Main(object):
                                     title_text = title_element.get('title')
                                     # ignore items in blacklist
                                     if Utils.isInBalckList(custom_black_list, title_text):
-                                        continue
-                                    if Utils.isInBalckList(self.douban_black_list, title_text):
                                         continue
                                     time_text = td[1].get('title')
 
@@ -139,7 +135,7 @@ class Main(object):
                                              douban_url_name[i], reply_count])
                                         print 'add new data:', title_text, time_text, reply_count, link_text, keyword
                                     except sqlite3.Error, e:
-                                        print 'data exists:', title_text, link_text, e # 之前添加过了而URL（设置了唯一）一样会报错
+                                        print 'data exists:', title_text, link_text, e # URL should be unique
                             except Exception, e:
                                 print 'error match table:', e
                     except Exception, e:
@@ -149,9 +145,9 @@ class Main(object):
                 else:
                     print 'request url error %s -status code: %s:' % (url_link, r.status_code)
                 time.sleep(self.config.douban_sleep_time)
-                
 
-            print '爬虫开始运行...'
+
+            print 'The spider begins to work...  爬虫开始运行...'
 
             douban_url = urlList(0)
             for i in range(len(douban_url)):
@@ -164,11 +160,10 @@ class Main(object):
                     keyword = search_list[j]
                     print 'start i->j %s -> %s %s' %(i, j, keyword)
                     print '>>>>>>>>>> Search %s  %s ...' % (douban_url_name[i].encode('utf-8'), keyword)
-                    
+
                     while spider.ok:
-                        spider.ok = True
                         print 'i, j, page_number: ', i, j, page_number
-                        
+
                         douban_url = urlList(page_number)
                         crawl(i, douban_url, keyword, self.douban_headers)
                         page_number += 1
@@ -180,8 +175,8 @@ class Main(object):
             values = cursor.fetchall()
 
             # export to html file
-            print '爬虫运行结束。开始写入结果文件'
-            
+            print 'The spider has finished working. Now begin to write the data in the result HTML.   爬虫运行结束。开始写入结果文件'
+
             file = open(result_file_name + '.html', 'wb')
             with file:
                 file.write('''<html>
@@ -191,7 +186,7 @@ class Main(object):
                     <link rel="stylesheet" type="text/css" href="../lib/resultPage.css">
                     </head>
                     <body>''')
-                file.write('<h1>上海租房信息 | </h1>')
+                file.write('<h1>Shanghai Renting Information 上海租房信息 | </h1>')
                 file.write('''
                     <a href="https://www.douban.com/" target="_black">
                     <img src="https://img3.doubanio.com/f/shire/8977fa054324c4c7f565447b003ebf75e9b4f9c6/pics/nav/lg_main@2x.png" alt="豆瓣icon"/>
@@ -199,7 +194,7 @@ class Main(object):
                     ''')
                 file.write('<table>')
                 file.write(
-                    '<tr><th>索引</th><th>标题</th><th>发帖时间</th><th>抓取时间</th><th>关键字</th><th>来源</th><th>回复数</th></tr>')
+                    '<tr><th>Index<br>索引</th><th>Title<br>标题</th><th>Posting Time<br>发帖时间</th><th>Scrawling Time<br>抓取时间</th><th>Keyword<br>关键字</th><th>Group<br>来源</th><th>Number of reply<br>回复数</th></tr>')
 
                 for row in values:
                     file.writelines('<tr>')
@@ -225,19 +220,8 @@ class Main(object):
         finally:
             conn.commit()
             conn.close()
-            print '========================================='
-            print '''
-            ##########     ##########
-            #        #     #        #
-            #        #     #        #
-            #   ##   #     #   ##   #
-            #        #     #        #
-            #        #     #        #
-            ##########     ##########
-
-            苟利租房生死以，岂因祸福避趋之。
-            '''
-            print '========================================='
+            print '=============================================='
+            print 'Finished writing the result HTML. Please open "' + result_file_name + '.html" to check the result'
             print '结果文件写入完毕。请打开"' + result_file_name + '.html"查看结果。'
 
 
